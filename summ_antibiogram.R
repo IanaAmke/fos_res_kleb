@@ -2,9 +2,14 @@ library(here)
 library(dplyr)
 library(ggplot2)
 
-# load antibiogram data
-antibiogram_data <- read.delim(file = "antibiogram_combined.tsv", header = TRUE, 
-                               sep = "\t")
+# load antibiogram data ad combined the two datasets
+antibiogram_data_df1 <- read.delim(file = "antibiogram_combined.tsv", header = TRUE, 
+                               sep = "\t", strip.white = TRUE)
+
+antibiogram_data_df2 <- read.delim(file ="antibiogram_combined (1).tsv", header = TRUE,
+                                   sep = "\t", strip.white = TRUE)
+
+antibiogram_data <- inner_join(antibiogram_data_df1, antibiogram_data_df2) 
 
 # filter for fosfomycin 
 fos_antibiogram <- antibiogram_data %>%
@@ -26,7 +31,15 @@ summ_dataset <- fos_antibiogram %>%
 # summary of testing standards used
 summ_test_std <- fos_antibiogram %>%
   group_by(Testing.standard.year.or.version, index) %>%
-  count(Testing.standard)
+  count(Testing.standard) %>%
+  mutate(MIC.breakpoint = case_when(Testing.standard.year.or.version == "v.10.0" ~ "S <= 322; R > 322",
+                                    Testing.standard.year.or.version == "" ~ "",
+                                    TRUE  ~ "S <= 32; R > 32"),
+         Diskdiff.breakpoint = case_when(Testing.standard.year.or.version == "2015" ~ "In preparation",
+                                         Testing.standard.year.or.version == "" ~ "",
+                                         TRUE  ~ "S >= 24; R < 24")) %>%
+  relocate(Testing.standard.year.or.version, MIC.breakpoint, Diskdiff.breakpoint, .after = Testing.standard) %>%
+  rename(Dataset = index, Total = n)
   
 # filter for disk diffusion measurements
 summ_Disk_diff <- fos_antibiogram %>%
@@ -55,7 +68,7 @@ summ_MIC_broth <- fos_antibiogram %>%
 # plot for MIC broth dilution frequency
 ggplot(summ_MIC_broth, aes(x = factor(Measurement), fill = Resistance.phenotype)) + geom_bar() + 
   labs(title = "MIC Broth Dilution Measurements", x = "Measurement (mg/L)", y = "Frequency", fill = "Phenotype") + 
-  scale_x_discrete(limits = factor(2^seq(1, 8, by = 1)))
+  scale_x_discrete(limits = factor(2^seq(2, 9, by = 1)))
 
 # fosfomycin data grouped by index
 summ_measurement_dataset <- fos_antibiogram %>%
@@ -111,7 +124,7 @@ dataset_MIC_broth_noindex <- dataset_MIC_broth %>%
   select(Sample.Name:Laboratory.Typing.Method.Version.or.Reagent)
 
 ggplot(dataset_MIC_broth, aes(factor(Measurement))) + geom_bar(data = dataset_MIC_broth_noindex, aes(fill = "other_dataset"), alpha = 0.5) +
-  geom_bar(aes(fill = "current_dataset")) + facet_wrap(~ index, ncol = 1) + geom_vline(aes(xintercept = 3, linetype = "EUCAST"), 
+  geom_bar(aes(fill = "current_dataset")) + facet_wrap(~ index, ncol = 1) + geom_vline(aes(xintercept = 2, linetype = "EUCAST"), 
                                                                                        alpha = 0.6, color = "black") +
   labs(title = "Fosfomycin MIC Broth Dilution", x = "Measurement (mg/L)", fill = "Dataset", linetype = "MIC breakpoint") +
-  scale_linetype_manual(values = "dotted") + scale_x_discrete(limits = factor(2^seq(1, 9, by = 1)))
+  scale_linetype_manual(values = "dotted") + scale_x_discrete(limits = factor(2^seq(2, 9, by = 1)))
