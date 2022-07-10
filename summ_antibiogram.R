@@ -9,7 +9,7 @@ antibiogram_data_df1 <- read.delim(file = "antibiogram_combined.tsv", header = T
 antibiogram_data_df2 <- read.delim(file ="antibiogram_combined (1).tsv", header = TRUE,
                                    sep = "\t", strip.white = TRUE)
 
-antibiogram_data <- inner_join(antibiogram_data_df1, antibiogram_data_df2) 
+antibiogram_data <- full_join(antibiogram_data_df1, antibiogram_data_df2) 
 
 # filter for fosfomycin 
 # use latest AST guidelines (2022)
