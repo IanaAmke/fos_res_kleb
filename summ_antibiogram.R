@@ -2,7 +2,7 @@ library(here)
 library(dplyr)
 library(ggplot2)
 
-# load antibiogram data ad combined the two datasets
+# load antibiogram data and combine the two datasets
 antibiogram_data_df1 <- read.delim(file = "antibiogram_combined.tsv", header = TRUE, 
                                sep = "\t", strip.white = TRUE)
 
@@ -12,6 +12,7 @@ antibiogram_data_df2 <- read.delim(file ="antibiogram_combined (1).tsv", header 
 antibiogram_data <- inner_join(antibiogram_data_df1, antibiogram_data_df2) 
 
 # filter for fosfomycin 
+# use latest AST guidelines (2022)
 fos_antibiogram <- antibiogram_data %>%
   filter(Antibiotic == "fosfomycin") %>%
   mutate(Resistance.phenotype = case_when(Measurement < 6 & Laboratory.Typing.Method == "Disk diffusion" ~ "invalid", 
