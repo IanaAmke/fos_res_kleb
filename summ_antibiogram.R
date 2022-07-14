@@ -3,10 +3,10 @@ library(dplyr)
 library(ggplot2)
 
 # load antibiogram data and combine the two datasets
-antibiogram_data_df1 <- read.delim(file = "antibiogram_combined.tsv", header = TRUE, 
+antibiogram_data_df1 <- read.delim(file = "data/antibiogram_combined.tsv", header = TRUE, 
                                sep = "\t", strip.white = TRUE)
 
-antibiogram_data_df2 <- read.delim(file ="antibiogram_combined (1).tsv", header = TRUE,
+antibiogram_data_df2 <- read.delim(file ="data/antibiogram_combined_2.tsv", header = TRUE,
                                    sep = "\t", strip.white = TRUE)
 
 antibiogram_data <- full_join(antibiogram_data_df1, antibiogram_data_df2) 
@@ -16,20 +16,21 @@ antibiogram_data <- full_join(antibiogram_data_df1, antibiogram_data_df2)
 fos_antibiogram <- antibiogram_data %>%
   mutate(Antibiotic = case_when(Antibiotic == "Fosfomycin" ~ "fosfomycin",
                                 TRUE ~ Antibiotic)) %>%
-  filter(Antibiotic == "fosfomycin") %>%
-  mutate(Resistance.phenotype = case_when(Measurement < 6 & Laboratory.Typing.Method == "Disk diffusion" ~ "invalid", 
-                                          Measurement < 24 & Laboratory.Typing.Method == "Disk diffusion" ~ "resistant",
-                                          Measurement >= 24 & Laboratory.Typing.Method == "Disk diffusion" ~ "susceptible",
-                                          Measurement > 8 & Laboratory.Typing.Method == "MIC (agar dilution)" ~ "resistant",
-                                          Measurement <= 8 & Laboratory.Typing.Method == "MIC (agar dilution)" ~ "susceptible",
-                                          Measurement > 8 & Laboratory.Typing.Method == "MIC (broth dilution)" ~ "resistant",
-                                          Measurement <= 8 & Laboratory.Typing.Method == "MIC (broth dilution)" ~ "susceptible"))
+  filter(Antibiotic == "fosfomycin") 
 
 # summary of samples within each dataset
 summ_dataset <- fos_antibiogram %>%
-  group_by(index) %>%
+  group_by(index, Laboratory.Typing.Method, Laboratory.Typing.Platform) %>%
   count() %>%
   rename(Dataset = index, Total = n)
+
+# summary plot of total sample count by dataset
+fos_antibiogram %>%
+  group_by(index) %>%
+  ggplot(aes(x = index, fill = Laboratory.Typing.Method)) +
+  geom_bar(alpha = 0.8) +
+  labs(title = "Total sample count per dataset", y = "Total sample count", fill = "Lab typing method") +
+  scale_fill_brewer(palette = "Accent") + theme(axis.title.x = element_blank(), axis.text.x = element_text(angle = 45, hjust = 1))
 
 # summary of testing standards used
 summ_test_std <- fos_antibiogram %>%
@@ -43,47 +44,31 @@ summ_test_std <- fos_antibiogram %>%
                                          TRUE  ~ "S >= 24; R < 24")) %>%
   relocate(Testing.standard.year.or.version, MIC.breakpoint, Diskdiff.breakpoint, .after = Testing.standard) %>%
   rename(Dataset = index, Total = n)
-  
-# filter for disk diffusion measurements
-summ_Disk_diff <- fos_antibiogram %>%
+
+# summary plots of total sample counts vs measurements for different lab typing methods  
+# Disk diffusion
+fos_antibiogram %>%
   group_by(Laboratory.Typing.Method) %>%
-  filter(Laboratory.Typing.Method == "Disk diffusion") 
-  
-# plot for disk diffusion frequency
-ggplot(summ_Disk_diff, aes(Measurement, fill = Resistance.phenotype)) + geom_bar() + 
-  labs(title = "Disk Diffusion Measurements", x = "Measurement (mm)", y = "Frequency", fill = "Phenotype") 
+  filter(Laboratory.Typing.Method == "Disk diffusion") %>%
+  ggplot(aes(Measurement, fill = index)) + geom_bar() + 
+  labs(title = "Disk Diffusion Measurements", x = "Measurement (mm)", y = "Frequency", fill = "Dataset") 
 
 # summary of MIC measurements
-# filter for MIC agar dilution measurements
-summ_MIC_agar <- fos_antibiogram %>%
+# MIC agar dilution 
+fos_antibiogram %>%
   group_by(Laboratory.Typing.Method) %>%
-  filter(Laboratory.Typing.Method == "MIC (agar dilution)") 
-   
-# plot for MIC agar dilution frequency
-ggplot(summ_MIC_agar, aes(x = factor(Measurement), fill = Resistance.phenotype)) + geom_bar() + 
-  labs(title = "MIC Agar Dilution Measurements", x = "Measurement (mg/L)", y = "Frequency", fill = "Phenotype") 
+  filter(Laboratory.Typing.Method == "MIC (agar dilution)") %>%
+  ggplot(aes(x = factor(Measurement), fill = index)) + geom_bar() + 
+  labs(title = "MIC Agar Dilution Measurements", x = "Measurement (mg/L)", y = "Frequency", fill = "Dataset") 
 
-# filter for MIC broth dilution measurements
-summ_MIC_broth <- fos_antibiogram %>%
+# MIC broth dilution 
+fos_antibiogram %>%
   group_by(Laboratory.Typing.Method) %>%
-  filter(Laboratory.Typing.Method == "MIC (broth dilution)") 
-
-# plot for MIC broth dilution frequency
-ggplot(summ_MIC_broth, aes(x = factor(Measurement), fill = Resistance.phenotype)) + geom_bar() + 
-  labs(title = "MIC Broth Dilution Measurements", x = "Measurement (mg/L)", y = "Frequency", fill = "Phenotype") + 
+  filter(Laboratory.Typing.Method == "MIC (broth dilution)") %>%
+  ggplot(aes(x = factor(Measurement), fill = index)) + geom_bar() + 
+  labs(title = "MIC Broth Dilution Measurements", x = "Measurement (mg/L)", y = "Frequency", fill = "Dataset") + 
   scale_x_discrete(limits = factor(2^seq(2, 9, by = 1)))
 
-# fosfomycin data grouped by index
-summ_measurement_dataset <- fos_antibiogram %>%
-  group_by(index) 
-  
-# plot of phenotype by dataset
-dataset_plot <- ggplot(summ_measurement_dataset, aes(x = index, fill = Laboratory.Typing.Method)) +
-  geom_bar(alpha = 0.8) + facet_wrap(~ Resistance.phenotype) +
-  labs(title = "Phenotype Frequency Per Dataset", y = "Total sample count", fill = "Lab typing method") +
-  scale_fill_brewer(palette = "Accent") 
-
-dataset_plot + theme(axis.title.x = element_blank(), axis.text.x = element_text(angle = 45, hjust = 1))
 
 # plot lab testing methods for one dataset against the other datasets
 
@@ -91,7 +76,8 @@ dataset_plot + theme(axis.title.x = element_blank(), axis.text.x = element_text(
 cols <- c("other_dataset" = "purple", "current_dataset" = "cyan1")
 
 # disk diffusion
-dataset_disk_diff <- summ_measurement_dataset %>%
+dataset_disk_diff <- fos_antibiogram %>%
+  group_by(index) %>%
   filter(Laboratory.Typing.Method == "Disk diffusion") 
 
 dataset_disk_diff_noindex <- dataset_disk_diff %>%
@@ -99,13 +85,12 @@ dataset_disk_diff_noindex <- dataset_disk_diff %>%
   select(Sample.Name:Laboratory.Typing.Method.Version.or.Reagent)
 
 ggplot(dataset_disk_diff, aes(Measurement)) + geom_bar(data = dataset_disk_diff_noindex, aes(fill = "other_dataset"), alpha = 0.5) +
-  geom_bar(aes(fill = "current_dataset")) + facet_wrap(~ index, ncol = 1) + geom_vline(aes(xintercept = 24, linetype = "EUCAST"), 
-                                                                                       alpha = 0.6, color = "black") +
-  labs(title = "Fosfomycin Disk Diffusion", x = "Measurement (mm)", fill = "Dataset", linetype = "Zone diameter breakpoint") +
-  scale_linetype_manual(values = "dotted")
+  geom_bar(aes(fill = "current_dataset")) + facet_wrap(~ index, ncol = 1) + 
+  labs(title = "Fosfomycin Disk Diffusion", x = "Measurement (mm)", fill = "Dataset")
 
 # MIC (agar dilution)
-dataset_MIC_agar <- summ_measurement_dataset %>%
+dataset_MIC_agar <- fos_antibiogram %>%
+  group_by(index) %>%
   filter(Laboratory.Typing.Method == "MIC (agar dilution)")
 
 dataset_MIC_agar_noindex <- dataset_MIC_agar %>%
@@ -113,13 +98,12 @@ dataset_MIC_agar_noindex <- dataset_MIC_agar %>%
   select(Sample.Name:Laboratory.Typing.Method.Version.or.Reagent)
 
 ggplot(dataset_MIC_agar, aes(factor(Measurement))) + geom_bar(data = dataset_MIC_agar_noindex, aes(fill = "other_dataset"), alpha = 0.5) +
-  geom_bar(aes(fill = "current_dataset")) + facet_wrap(~ index, ncol = 1) + geom_vline(aes(xintercept = 3, linetype = "EUCAST"), 
-                                                                                       alpha = 0.6, color = "black") +
-  labs(title = "Fosfomycin MIC Agar Dilution", x = "Measurement (mg/L)", fill = "Dataset", linetype = "MIC breakpoint") +
-  scale_linetype_manual(values = "dotted")
+  geom_bar(aes(fill = "current_dataset")) + facet_wrap(~ index, ncol = 1) + 
+  labs(title = "Fosfomycin MIC Agar Dilution", x = "Measurement (mg/L)", fill = "Dataset") 
 
 # MIC (broth dilution)
-dataset_MIC_broth <- summ_measurement_dataset %>%
+dataset_MIC_broth <- fos_antibiogram %>%
+  group_by(index) %>%
   filter(Laboratory.Typing.Method == "MIC (broth dilution)")
 
 dataset_MIC_broth_noindex <- dataset_MIC_broth %>%
@@ -127,7 +111,6 @@ dataset_MIC_broth_noindex <- dataset_MIC_broth %>%
   select(Sample.Name:Laboratory.Typing.Method.Version.or.Reagent)
 
 ggplot(dataset_MIC_broth, aes(factor(Measurement))) + geom_bar(data = dataset_MIC_broth_noindex, aes(fill = "other_dataset"), alpha = 0.5) +
-  geom_bar(aes(fill = "current_dataset")) + facet_wrap(~ index, ncol = 1) + geom_vline(aes(xintercept = 2, linetype = "EUCAST"), 
-                                                                                       alpha = 0.6, color = "black") +
-  labs(title = "Fosfomycin MIC Broth Dilution", x = "Measurement (mg/L)", fill = "Dataset", linetype = "MIC breakpoint") +
-  scale_linetype_manual(values = "dotted") + scale_x_discrete(limits = factor(2^seq(2, 9, by = 1)))
+  geom_bar(aes(fill = "current_dataset")) + facet_wrap(~ index, ncol = 1) + 
+  labs(title = "Fosfomycin MIC Broth Dilution", x = "Measurement (mg/L)", fill = "Dataset") +
+  scale_x_discrete(limits = factor(2^seq(3, 9, by = 1)))
