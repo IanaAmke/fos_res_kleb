@@ -6,10 +6,10 @@ library(ggupset)
 library(tidyverse)
 
 # load antibiogram data and combine the two datasets
-antibiogram_data_df1 <- read.delim(file = "antibiogram_combined.tsv", header = TRUE, 
+antibiogram_data_df1 <- read.delim(file = "data/antibiogram_combined.tsv", header = TRUE, 
                                    sep = "\t", strip.white = TRUE)
 
-antibiogram_data_df2 <- read.delim(file ="antibiogram_combined (1).tsv", header = TRUE,
+antibiogram_data_df2 <- read.delim(file ="data/antibiogram_combined_2.tsv", header = TRUE,
                                    sep = "\t", strip.white = TRUE)
 
 antibiogram_data <- full_join(antibiogram_data_df1, antibiogram_data_df2) 
@@ -20,39 +20,36 @@ fos_antibiogram <- antibiogram_data %>%
   mutate(Antibiotic = case_when(Antibiotic == "Fosfomycin" ~ "fosfomycin",
                                 TRUE ~ Antibiotic)) %>%
   filter(Antibiotic == "fosfomycin") %>%
-  mutate(Resistance.phenotype = case_when(Measurement < 6 & Laboratory.Typing.Method == "Disk diffusion" ~ "invalid", 
-                                          Measurement < 24 & Laboratory.Typing.Method == "Disk diffusion" ~ "resistant",
-                                          Measurement >= 24 & Laboratory.Typing.Method == "Disk diffusion" ~ "susceptible",
-                                          Measurement > 8 & Laboratory.Typing.Method == "MIC (agar dilution)" ~ "resistant",
-                                          Measurement <= 8 & Laboratory.Typing.Method == "MIC (agar dilution)" ~ "susceptible",
-                                          Measurement > 8 & Laboratory.Typing.Method == "MIC (broth dilution)" ~ "resistant",
-                                          Measurement <= 8 & Laboratory.Typing.Method == "MIC (broth dilution)" ~ "susceptible"))
+  mutate(strain = Sample.Name) %>%
+  relocate(strain, .after = Sample.Name) %>%
+  separate(strain, into = "strain", sep = "[.]", extra = "drop") 
+
+write_delim(fos_antibiogram, file = "fos_antibiogram.tsv", delim = "\t")
 
 # load kleborate data and combine the two datasets
-kleborate_genotype_df1 <- read.delim(file = "kleb_results_concat.tsv", header = TRUE, 
+kleborate_genotype_df1 <- read.delim(file = "data/kleb_results_concat.tsv", header = TRUE, 
                                  sep = "\t", strip.white = TRUE)
 
-kleborate_genotype_df2 <- read.delim(file = "kleb_phenotype_all.tsv", header = TRUE,
+kleborate_genotype_df2 <- read.delim(file = "data/kleb_results_concat_2.tsv", header = TRUE,
                                      sep = "\t", strip.white = TRUE)
   
-
 kleborate_genotype <- full_join(kleborate_genotype_df1, kleborate_genotype_df2)
 
 # merge genotype and phenotype datasets
-fos_ab_kleb <- full_join(fos_antibiogram, kleborate_genotype, 
-                         by = c("Sample.Name" = "strain"), keep = TRUE) %>%
+fos_ab_kleb <- full_join(fos_antibiogram, kleborate_genotype, keep = FALSE) %>%
   relocate(strain, species, species_match, .after = Sample.Name) %>%
-  mutate(Fcyn_acquired = coalesce(Fcyn_acquired, fosfomycin_gene)) %>%
   select(Sample.Name:O_locus_missing_genes, Fcyn_acquired, truncated_resistance_hits, 
          spurious_resistance_hits) %>%
+  filter(Antibiotic == "fosfomycin") %>%
   mutate(Fcyn_acquired = case_when(Fcyn_acquired == "-" ~ "NKRD",
                                    TRUE ~ Fcyn_acquired),
          truncated_resistance_hits = case_when(truncated_resistance_hits == "-" ~ "NKRD",
                                                TRUE ~ truncated_resistance_hits),
          spurious_resistance_hits = case_when(spurious_resistance_hits == "-" ~ "NKRD",
                                               TRUE ~ spurious_resistance_hits)) 
-  
 
+write_delim(fos_ab_kleb, file = "fos_ab_kleb.tsv", delim = "\t")
+ 
 # CREATE UPSET PLOTS
 # convert tidy df (tibble)
 tidy_fos_ab_kleb <- fos_ab_kleb %>% 
@@ -71,10 +68,8 @@ diskdiff_tidy_fos_ab_kleb_all %>%
   group_by(Res.Pattern.Type) %>% 
   summarize(Res.Patterns = list(Res.Pattern), Measurement = Measurement) %>%
   ggplot(aes(Res.Patterns, Measurement)) + geom_violin() + geom_count() + 
-  geom_hline(aes(yintercept = 24, linetype = "EUCAST"), alpha = 0.6, color = "black") + 
   labs(x = "Resistance genes", y = "Fosfomycin disk diffusion measurement (mm)", 
-       linetype = "Zone diameter breakpoint", color = "Fosfomycin", size = "Number of strains") + 
-    scale_linetype_manual(values = "dotted") + scale_x_upset()  
+       size = "Number of strains") + scale_x_upset()  
 
 # disk diffusion violin plots for individual res patterns
 # filter for disk diffusion
@@ -86,13 +81,8 @@ diskdiff_tidy_fos_ab_kleb %>%
   group_by(Fcyn_acquired) %>% 
   summarize(Fcyn = list(Fcyn_acquired), Measurement = Measurement) %>%
   ggplot(aes(Fcyn, Measurement)) + geom_violin() + geom_count(aes(color = Fcyn_acquired)) + 
-  geom_hline(aes(yintercept = 24, linetype = "EUCAST"), alpha = 0.6, color = "black") + 
   labs(x = "Fosfomycin acquired genes", y = "Fosfomycin disk diffusion measurement (mm)", 
-       linetype = "Zone diameter breakpoint", color = "Fosfomycin", size = "Number of strains") +
-  # scale_color_hue(labels = c("Known resistance gene", "No known resistance gene")) + 
-  scale_color_manual(values = c("brown", "purple"), 
-                     labels = c("Known resistance gene", "No known resistance gene")) +
-  scale_linetype_manual(values = "dotted") + scale_x_upset()
+       color = "Fosfomycin", size = "Number of strains") + scale_x_upset()
 
 # disk diffusion vs truncated res hits
 diskdiff_tidy_fos_ab_kleb %>%
@@ -100,10 +90,8 @@ diskdiff_tidy_fos_ab_kleb %>%
   summarize(Trunc = list(truncated_resistance_hits), Measurement = Measurement) %>%
   filter(str_detect(truncated_resistance_hits, 'fos|NKRD')) %>%
   ggplot(aes(Trunc, Measurement)) + geom_violin() + geom_count(aes(color = truncated_resistance_hits)) + 
-  geom_hline(aes(yintercept = 24, linetype = "EUCAST"), alpha = 0.6, color = "black") + 
   labs(x = "Truncated resistance hits", y = "Fosfomycin disk diffusion measurement (mm)", 
-       linetype = "Zone diameter breakpoint", color = "Truncated res hits", size = "Number of strains") + 
-  scale_linetype_manual(values = "dotted") + scale_x_upset()
+       color = "Truncated res hits", size = "Number of strains") + scale_x_upset()
   
 # disk diffusion vs spurious res hits
 diskdiff_tidy_fos_ab_kleb %>%
@@ -111,10 +99,8 @@ diskdiff_tidy_fos_ab_kleb %>%
   summarize(Spurious = list(spurious_resistance_hits), Measurement = Measurement) %>%
   filter(str_detect(spurious_resistance_hits, 'fos|NKRD')) %>%
   ggplot(aes(Spurious, Measurement)) + geom_violin() + geom_count(aes(color = spurious_resistance_hits)) + 
-  geom_hline(aes(yintercept = 24, linetype = "EUCAST"), alpha = 0.6, color = "black") + 
   labs(x = "Spurious resistance hits", y = "Fosfomycin disk diffusion measurement (mm)", 
-       linetype = "Zone diameter breakpoint", color = "Spurious res hits", size = "Number of strains") + 
-  scale_linetype_manual(values = "dotted") + scale_x_upset()
+       color = "Spurious res hits", size = "Number of strains") + scale_x_upset()
 
 
 # create MIC (agar dilution) plots
@@ -129,22 +115,20 @@ micagar_tidy_fos_ab_kleb_all %>%
   group_by(Res.Pattern.Type) %>% 
   summarize(Res.Patterns = list(Res.Pattern), Measurement = Measurement) %>%
   ggplot(aes(Res.Patterns, factor(Measurement))) + geom_violin() + geom_count() + 
-  geom_hline(aes(yintercept = 3, linetype = "EUCAST"), alpha = 0.6, color = "black") +
   labs(x = "Resistance genes", y = "Fosfomycin MIC (agar) measurement (mg/L)", 
-       size = "Number of strains", linetype = "MIC breakpoint") + 
-  scale_linetype_manual(values = "dotted") + scale_x_upset()
+       size = "Number of strains") + scale_x_upset()
 
 # MIC (agar dilution) violin plots for individual res patterns
 # filter for MIC (agar dilution)
 micagar_tidy_fos_ab_kleb <- tidy_fos_ab_kleb %>%
-  filter(Laboratory.Typing.Method == "MIC (agar dilution)")
+  filter(Laboratory.Typing.Method == "MIC (agar dilution)") %>%
+  na.omit()
 
 # MIC(agar dilution) vs Fcyn_acquired 
 micagar_tidy_fos_ab_kleb %>%
   group_by(Fcyn_acquired) %>% 
   summarize(Fcyn = list(Fcyn_acquired), Measurement = Measurement) %>%
   ggplot(aes(Fcyn, Measurement)) + geom_violin() + geom_count(aes(color = Fcyn_acquired)) + 
-  #geom_hline(aes(yintercept = 24, linetype = "EUCAST"), alpha = 0.6, color = "black") + 
   labs(x = "Fosfomycin acquired genes", y = "Fosfomycin MIC (agar) measurement (mg/L)", 
        color = "Fosfomycin", size = "Number of strains") +  scale_x_upset() 
   
@@ -154,10 +138,8 @@ micagar_tidy_fos_ab_kleb %>%
   summarize(Trunc = list(truncated_resistance_hits), Measurement = Measurement) %>%
   filter(str_detect(truncated_resistance_hits, 'fos|NKRD')) %>%
   ggplot(aes(Trunc, factor(Measurement))) + geom_violin() + geom_count(aes(color = truncated_resistance_hits)) + 
-  geom_hline(aes(yintercept = 3, linetype = "EUCAST"), alpha = 0.6, color = "black") +
   labs(x = "Truncated resistance hits", y = "Fosfomycin MIC (agar) measurement (mg/L)", 
-       color = "Truncated res hits", size = "Number of strains", linetype = "MIC breakpoint") + 
-  scale_linetype_manual(values = "dotted") + scale_x_upset()
+       color = "Truncated res hits", size = "Number of strains") + scale_x_upset()
 
 # MIC (agar dilution) vs spurious res hits
 micagar_tidy_fos_ab_kleb %>%
@@ -165,10 +147,8 @@ micagar_tidy_fos_ab_kleb %>%
   summarize(Spurious = list(spurious_resistance_hits), Measurement = Measurement) %>%
   filter(str_detect(spurious_resistance_hits, 'fos|NKRD')) %>%
   ggplot(aes(Spurious, factor(Measurement))) + geom_violin() + geom_count(aes(color = spurious_resistance_hits)) + 
-  geom_hline(aes(yintercept = 3, linetype = "EUCAST"), alpha = 0.6, color = "black") +
   labs(x = "Spurious resistance hits", y = "Fosfomycin MIC (agar) measurement (mg/L)", 
-       color = "Spurious res hits", size = "Number of strains", linetype = "MIC breakpoint") + 
-  scale_linetype_manual(values = "dotted") + scale_x_upset()
+       color = "Spurious res hits", size = "Number of strains") + scale_x_upset()
 
 
 # create MIC (broth dilution) plots
@@ -183,15 +163,16 @@ micbroth_tidy_fos_ab_kleb_all %>%
   group_by(Res.Pattern.Type) %>% 
   summarize(Res.Patterns = list(Res.Pattern), Measurement = Measurement) %>%
   ggplot(aes(Res.Patterns, factor(Measurement))) + geom_violin() + geom_count() + 
-  geom_hline(aes(yintercept = 2, linetype = "EUCAST"), alpha = 0.6, color = "black") +
   labs(x = "Resistance genes", y = "Fosfomycin MIC (broth) measurement (mg/L)", 
-       size = "Number of strains", linetype = "MIC breakpoint") + scale_y_discrete(limits = factor(2^seq(2, 8, by = 1))) + 
-  scale_linetype_manual(values = "dotted") + scale_x_upset()
+       size = "Number of strains") + scale_y_discrete(limits = factor(2^seq(2, 8, by = 1))) + 
+  scale_x_upset()
+
 
 # MIC (broth dilution) violin plots for individual res patterns
 # filter for MIC (broth dilution)
 micbroth_tidy_fos_ab_kleb <- tidy_fos_ab_kleb %>%
-  filter(Laboratory.Typing.Method == "MIC (broth dilution)")
+  filter(Laboratory.Typing.Method == "MIC (broth dilution)") %>%
+  na.omit()
 
 # MIC(broth dilution) vs Fcyn_acquired 
 micbroth_tidy_fos_ab_kleb %>%
@@ -207,10 +188,9 @@ micbroth_tidy_fos_ab_kleb %>%
   summarize(Trunc = list(truncated_resistance_hits), Measurement = Measurement) %>%
   filter(str_detect(truncated_resistance_hits, 'fos|NKRD')) %>%
   ggplot(aes(Trunc, factor(Measurement))) + geom_violin() + geom_count(aes(color = truncated_resistance_hits)) + 
-  geom_hline(aes(yintercept = 2, linetype = "EUCAST"), alpha = 0.6, color = "black") +
   labs(x = "Truncated resistance hits", y = "Fosfomycin MIC (broth) measurement (mg/L)", 
-       color = "Truncated res hits", size = "Number of strains", linetype = "MIC breakpoint") + 
-  scale_linetype_manual(values = "dotted") + scale_y_discrete(limits = factor(2^seq(2, 9, by = 1))) + scale_x_upset()
+       color = "Truncated res hits", size = "Number of strains") + 
+  scale_y_discrete(limits = factor(2^seq(2, 9, by = 1))) + scale_x_upset()
 
 # MIC (broth dilution) vs spurious res hits
 micbroth_tidy_fos_ab_kleb%>%
@@ -218,10 +198,9 @@ micbroth_tidy_fos_ab_kleb%>%
   summarize(Spurious = list(spurious_resistance_hits), Measurement = Measurement) %>%
   filter(str_detect(spurious_resistance_hits, 'fos|NKRD')) %>%
   ggplot(aes(Spurious, factor(Measurement))) + geom_violin() + geom_count(aes(color = spurious_resistance_hits)) + 
-  geom_hline(aes(yintercept = 2, linetype = "EUCAST"), alpha = 0.6, color = "black") +
   labs(x = "Spurious resistance hits", y = "Fosfomycin MIC (broth) measurement (mg/L)", 
-       color = "Spurious res hits", size = "Number of strains", linetype = "MIC breakpoint") + 
-  scale_linetype_manual(values = "dotted") + scale_y_discrete(limits = factor(2^seq(2, 9, by = 1))) + scale_x_upset()
+       color = "Spurious res hits", size = "Number of strains") + 
+  scale_y_discrete(limits = factor(2^seq(2, 9, by = 1))) + scale_x_upset()
 
 # summary of res patterns and res pattern types
 summ_res_patterns <- tidy_fos_ab_kleb %>%
@@ -276,7 +255,7 @@ fos_fcyn_present <- tidy_fos_ab_kleb %>%
   na.omit()
 
 fos_fcyn_present %>%
-  ggplot(aes(Resistance.phenotype, fill = Fcyn.present)) + geom_bar(position = "dodge", width = 0.25) + 
+  ggplot(aes(index, fill = Fcyn.present)) + geom_bar(position = "dodge", width = 0.25) + 
   facet_wrap(~ Laboratory.Typing.Method, nrow = 1) + labs(x = "Fosfomycin resistance genes", fill = "fos genes")
 
 # truncated resistance hits
@@ -286,7 +265,7 @@ fos_trunc_present <- tidy_fos_ab_kleb %>%
   na.omit()
 
 fos_trunc_present %>%
-  ggplot(aes(Resistance.phenotype, fill = Truncated.present)) + geom_bar(position = "dodge", width = 0.5) + 
+  ggplot(aes(index, fill = Truncated.present)) + geom_bar(position = "dodge", width = 0.5) + 
   facet_wrap(~ Laboratory.Typing.Method, nrow = 1) + labs(x = "Truncated resistance hits", fill = "Truncated resistance hits")
 
 # spurious resistance hits
@@ -296,46 +275,6 @@ fos_spur_present <- tidy_fos_ab_kleb %>%
   na.omit()
 
 fos_spur_present %>%
-  ggplot(aes(Resistance.phenotype, fill = Spurious.present)) + geom_bar(position = "dodge") + 
-  facet_wrap(~ Laboratory.Typing.Method, nrow = 1) + labs(x = "Spurious resistance hits", fill = "Spurious resistance hits") 
-
-# total number of strains for w/ or w/o fos genes that are res or sus
-# Fcyn_acquired
-fos_tidy_fos_ab_kleb <- tidy_fos_ab_kleb %>%
-  filter(str_detect(Fcyn_acquired, 'fos|NKRD')) %>%
-  mutate(gen.phen.pattern = case_when(Fcyn_acquired == "NKRD" & Resistance.phenotype == "resistant" ~ "NKRD+r",
-                                      Fcyn_acquired == "NKRD" & Resistance.phenotype == "susceptible" ~ "NKRD+s",
-                                      Fcyn_acquired != "NKRD" & Resistance.phenotype == "resistant" ~ "fos+r",
-                                      Fcyn_acquired != "NKRD" & Resistance.phenotype == "susceptible" ~ "fos+s")) %>%
-  na.omit()
-
-fos_tidy_fos_ab_kleb %>%
-  ggplot(aes(gen.phen.pattern, fill = Fcyn_acquired)) + geom_bar(position = "dodge", width = 0.5) + 
-  facet_wrap(~ Laboratory.Typing.Method, nrow = 1) + labs(x = "Genotype vs Phenotype", fill = "fos genes")
-
-# truncated resistance hits
-trunc_tidy_fos_ab_kleb <- tidy_fos_ab_kleb %>%
-  filter(str_detect(truncated_resistance_hits, 'fos|NKRD')) %>%
-  mutate(gen.phen.pattern = case_when(truncated_resistance_hits == "NKRD" & Resistance.phenotype == "resistant" ~ "NKRD+r",
-                                      truncated_resistance_hits == "NKRD" & Resistance.phenotype == "susceptible" ~ "NKRD+s",
-                                      truncated_resistance_hits != "NKRD" & Resistance.phenotype == "resistant" ~ "fos+r",
-                                      truncated_resistance_hits != "NKRD" & Resistance.phenotype == "susceptible" ~ "fos+s")) %>%
-  na.omit()
-
-trunc_tidy_fos_ab_kleb %>%  
-  ggplot(aes(gen.phen.pattern, fill = truncated_resistance_hits)) + geom_bar(position = "dodge", width = 0.5) + 
-  facet_wrap(~ Laboratory.Typing.Method, nrow = 1) + labs(x = "Genotype vs Phenotype", fill = "Truncated resistance hits")
-
-# spurious resistance hits
-spur_tidy_fos_ab_kleb <- tidy_fos_ab_kleb %>%
-  filter(str_detect(spurious_resistance_hits, 'fos|NKRD')) %>%
-  mutate(gen.phen.pattern = case_when(spurious_resistance_hits == "NKRD" & Resistance.phenotype == "resistant" ~ "NKRD+r",
-                                      spurious_resistance_hits == "NKRD" & Resistance.phenotype == "susceptible" ~ "NKRD+s",
-                                      spurious_resistance_hits != "NKRD" & Resistance.phenotype == "resistant" ~ "fos+r",
-                                      spurious_resistance_hits != "NKRD" & Resistance.phenotype == "susceptible" ~ "fos+s")) %>%
-  na.omit()
-
-spur_tidy_fos_ab_kleb %>%
-  ggplot(aes(gen.phen.pattern, fill = spurious_resistance_hits)) + geom_bar(position = "dodge", width = 0.5) + 
-  facet_wrap(~ Laboratory.Typing.Method, nrow = 1) + labs(x = "Genotype vs Phenotype", fill = "Spurious resistance hits")
-
+  ggplot(aes(index, fill = Spurious.present)) + geom_bar(position = "dodge") + 
+  facet_wrap(~ Laboratory.Typing.Method, nrow = 1) + labs(x = "Spurious resistance hits", fill = "Spurious resistance hits") + 
+  theme(axis.title.x = element_blank(), axis.text.x = element_text(angle = 45, hjust = 1))
