@@ -14,6 +14,8 @@ antibiogram_data <- full_join(antibiogram_data_df1, antibiogram_data_df2)
 # filter for fosfomycin 
 # use latest AST guidelines (2022)
 fos_antibiogram <- antibiogram_data %>%
+  mutate(Antibiotic = case_when(Antibiotic == "Fosfomycin" ~ "fosfomycin",
+                                TRUE ~ Antibiotic)) %>%
   filter(Antibiotic == "fosfomycin") %>%
   mutate(Resistance.phenotype = case_when(Measurement < 6 & Laboratory.Typing.Method == "Disk diffusion" ~ "invalid", 
                                           Measurement < 24 & Laboratory.Typing.Method == "Disk diffusion" ~ "resistant",
@@ -31,7 +33,7 @@ summ_dataset <- fos_antibiogram %>%
 
 # summary of testing standards used
 summ_test_std <- fos_antibiogram %>%
-  group_by(Testing.standard.year.or.version, index) %>%
+  group_by(Testing.standard.year.or.version, index, Laboratory.Typing.Method) %>%
   count(Testing.standard) %>%
   mutate(MIC.breakpoint = case_when(Testing.standard.year.or.version == "v.10.0" ~ "S <= 322; R > 322",
                                     Testing.standard.year.or.version == "" ~ "",
@@ -77,7 +79,7 @@ summ_measurement_dataset <- fos_antibiogram %>%
   
 # plot of phenotype by dataset
 dataset_plot <- ggplot(summ_measurement_dataset, aes(x = index, fill = Laboratory.Typing.Method)) +
-  geom_bar(alpha = 0.8) + scale_y_continuous(breaks = seq(0, 300, 50)) + facet_wrap(~ Resistance.phenotype) +
+  geom_bar(alpha = 0.8) + facet_wrap(~ Resistance.phenotype) +
   labs(title = "Phenotype Frequency Per Dataset", y = "Total sample count", fill = "Lab typing method") +
   scale_fill_brewer(palette = "Accent") 
 
