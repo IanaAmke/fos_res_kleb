@@ -131,7 +131,7 @@ p1 <- p0 +
                               title = "Disk diffusion", title.height = 0.01,
                               hjust = 0.05), pwidth = 0.4
   ) +
-  scale_fill_continuous(low = "#f7e4e4", high = "#fa0505", name = "Disk diffusion\nmeasurements") +
+  scale_fill_continuous(low = "#fff5f5", high = "#fa0505", name = "Disk diffusion\nmeasurements") +
   geom_treescale(fontsize=2, linesize=0.3, x=0, y=1000) +
   theme(legend.background=element_rect(fill=NA),
         legend.title=element_text(size=6.5),
