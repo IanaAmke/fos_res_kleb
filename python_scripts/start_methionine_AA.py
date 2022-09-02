@@ -1,6 +1,6 @@
 from Bio import SeqIO
 
-filename = "fos_AA_final.fasta"
+filename = "/home/iamke/fos.res.kleb/fos_repo/fos_res_kleb/data/final_seq_data/fos_AA_final.fasta"
 
 bad = 0
 
