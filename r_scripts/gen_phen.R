@@ -203,11 +203,11 @@ micbroth_tidy_fos_ab_kleb%>%
   scale_y_discrete(limits = factor(2^seq(2, 9, by = 1))) + scale_x_upset()
 
 # summary of res patterns and res pattern types
-summ_res_patterns <- tidy_fos_ab_kleb %>%
-  gather(Res.Pattern, Res.Pattern.Type, c(28, 29, 30)) %>%
-  filter(str_detect(Res.Pattern.Type, 'fos|NKRD')) %>%
-  group_by(index, Res.Pattern, Res.Pattern.Type, Laboratory.Typing.Method, Resistance.phenotype) %>%
-  count()
+#summ_res_patterns <- tidy_fos_ab_kleb %>%
+  #gather(Res.Pattern, Res.Pattern.Type, c(28, 29, 30)) %>%
+  #filter(str_detect(Res.Pattern.Type, 'fos|NKRD')) %>%
+  #group_by(index, Res.Pattern, Res.Pattern.Type, Laboratory.Typing.Method, Resistance.phenotype) %>%
+  #count()
 
 # bar plots of fos res genes vs total count
 # total number of strains for diff res patterns
