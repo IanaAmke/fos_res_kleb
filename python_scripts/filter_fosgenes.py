@@ -1,3 +1,5 @@
+# python script written by Dr. Kara Tsang
+
 import sys
 import glob
 import csv
