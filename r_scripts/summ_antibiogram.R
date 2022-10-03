@@ -33,19 +33,6 @@ fos_antibiogram %>%
   labs(title = "Total sample count per dataset", y = "Total sample count", fill = "Lab typing method") +
   scale_fill_brewer(palette = "Accent") + theme(axis.title.x = element_blank(), axis.text.x = element_text(angle = 45, hjust = 1))
 
-# summary of testing standards used
-summ_test_std <- fos_antibiogram %>%
-  group_by(Testing.standard.year.or.version, index, Laboratory.Typing.Method) %>%
-  count(Testing.standard) %>%
-  mutate(MIC.breakpoint = case_when(Testing.standard.year.or.version == "v.10.0" ~ "S <= 322; R > 322",
-                                    Testing.standard.year.or.version == "" ~ "",
-                                    TRUE  ~ "S <= 32; R > 32"),
-         Diskdiff.breakpoint = case_when(Testing.standard.year.or.version == "2015" ~ "In preparation",
-                                         Testing.standard.year.or.version == "" ~ "",
-                                         TRUE  ~ "S >= 24; R < 24")) %>%
-  relocate(Testing.standard.year.or.version, MIC.breakpoint, Diskdiff.breakpoint, .after = Testing.standard) %>%
-  rename(Dataset = index, Total = n)
-
 # summary plots of total sample counts vs measurements for different lab typing methods  
 # ECOFF cut-offs used due to there being no K. pneumoniae breakpoints for fosfomycin
 # Disk diffusion
