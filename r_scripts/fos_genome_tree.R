@@ -4,7 +4,6 @@ library(ggtree)
 library(ggtreeExtra)
 library(ggnewscale)
 library(treeio)
-#library(wesanderson)
 
 # read newick file containing tree data
 tree <- read.newick("phylogenetic_trees/filtered_fosgenes_NR_ID_midpoint.nwk")
@@ -43,42 +42,38 @@ filtered_fos_fcyn_uniquehits <- fos_fcyn_uniquehits %>%
 # read tree metadata
 fos_metadata <- filtered_fos_fcyn_uniquehits
 
-# data for genes 
-dat1 <- fos_metadata %>%
-  select(strain, gene)
-
 # data for gene copy number
-dat2 <- fos_metadata %>%
+dat1 <- fos_metadata %>%
   select(gene, gene.copy.number) %>%
   mutate(total.gene.number = paste(gene.copy.number))
 
-dat2$total.gene.number <- as.factor(dat2$total.gene.number)
+dat1$total.gene.number <- as.factor(dat1$total.gene.number)
 
 # data for phenotypes
 # mic broth dilution
-dat3 <- fos_metadata %>%
+dat2 <- fos_metadata %>%
   filter(Laboratory.Typing.Method == "MIC (broth dilution)") %>%
   select(gene, Measurement) %>%
   mutate(MIC.measurements = paste(Measurement))
 
-dat3$MIC.measurements <- as.factor(dat3$MIC.measurements)
+dat2$MIC.measurements <- as.factor(dat2$MIC.measurements)
 
 # disk diffusion
-dat4 <- fos_metadata %>%
+dat3 <- fos_metadata %>%
   filter(Laboratory.Typing.Method == "Disk diffusion") %>%
   select(gene, Measurement) %>%
   mutate(D.df.measurements = paste(Measurement))
 
-dat4$D.df.measurements <- as.factor(dat4$D.df.measurements)
+dat3$D.df.measurements <- as.factor(dat3$D.df.measurements)
 
 # adjust order
-dat2$total.gene.number <- factor(dat2$total.gene.number, 
+dat1$total.gene.number <- factor(dat1$total.gene.number, 
                      levels=c("1", "2", "3", "4"))
 
-dat3$MIC.measurements <- factor(dat3$MIC.measurements, 
+dat2$MIC.measurements <- factor(dat2$MIC.measurements, 
                      levels=c("16", "32", "64", "128", "256"))
 
-dat4$D.df.measurements <- factor(dat4$D.df.measurements, 
+dat3$D.df.measurements <- factor(dat3$D.df.measurements, 
                                 levels=c("6", "13", "14", "15", "16",
                                          "17", "18", "19", "20", "21",
                                          "22", "23", "24", "25", "27"))
@@ -91,7 +86,7 @@ kleborate_genes <- as.tibble(tree) %>%
   filter(grepl('[*]$', fos.gene))
 
 # plot tree and highlight strains with intrinsic fosA5
-p0 <- ggtree(tree) %<+% dat2 +
+p0 <- ggtree(tree) %<+% dat1 +
   geom_tiplab(align = TRUE, linesize = 0.1, size = 0.5) +
   geom_hilight(data=kleborate_genes, mapping=aes(node=node),
                extendto=0.933, alpha=0.3, fill="darkorange",
@@ -115,7 +110,7 @@ p1 <- p0 +
   scale_fill_continuous(low = "#ffffff", high = "#0a12f5", name = "Gene copy\nnumber", breaks = c(0,1,2),
                         limits = c(0,2)) +
   new_scale_fill() +
-  geom_fruit(data=dat3, geom=geom_tile,
+  geom_fruit(data=dat2, geom=geom_tile,
              mapping=aes(y=gene, x=MIC.measurements, fill=Measurement),
              color = "white", offset = 0.03, size = 0.02 ,
              axis.params=list(axis="x", text.angle = 90, text.size = 1.5, 
@@ -124,7 +119,7 @@ p1 <- p0 +
              ) +
   scale_fill_continuous(low = "#e4f7e9", high = "#03fc45", name = "MIC broth dilution\nmeasurements") +
   new_scale_fill() +
-  geom_fruit(data=dat4, geom=geom_tile,
+  geom_fruit(data=dat3, geom=geom_tile,
              mapping=aes(y=gene, x=D.df.measurements, fill=Measurement),
              color = "white", offset = 0.02, size = 0.02 ,
              axis.params=list(axis="x", text.angle = 90, text.size = 1.5, 
