@@ -1,8 +1,11 @@
 # Fosfomycin Resistance in K. pneumoniae 
 ## Project summary
 *K. pneumoniae* is a Gram-negative bacterium that causes opportunistic and community-acquired infections. *K. pneumoniae* easily develops resistance to multiple antibiotics as it can acquire numerous antibiotic resistance genes (ARGs) from the environment and from other bacteria. As a result, there exists multidrug resistant (MDR) and extremely resistant (XDR) strains which are highly resistant to almost all the antibiotics currently in use.
+
 Fosfomycin is an antibiotic that has been in use in the treatment of uncomplicated UTIs and is currently being trialled, either as a monotherapy or in combination with other drugs, in the treatment of MDR. However, mechanisms of resistance have been reported with one of them being the presence of *fos* genes that encode for Fos enzymes which inactivate fosfomycin through the nucleophilic addition of substrates such as glutathione, bacillithiol, and water to the first carbon of its epoxide ring.  
-Mechanisms of fosfomycin resistance have been well-studied in bacteria such as *E. coli* where they have been shown to contribute to higher minimum inhibitory concentration (MIC) measurements and worse clinical outcomes for treatment with fosfomycin. However, there have been a few studies on mechanisms of resistance in *K. pneumoniae* and only a few have gone into depth on the impact of the presence of mutations in the fosfomycin transport systems and drug target and genes encoding fosfomycin-modifying enzymes.  
+
+Mechanisms of fosfomycin resistance have been well-studied in bacteria such as *E. coli* where they have been shown to contribute to higher minimum inhibitory concentration (MIC) measurements and worse clinical outcomes for treatment with fosfomycin. However, there have been a few studies on mechanisms of resistance in *K. pneumoniae* and only a few have gone into depth on the impact of the presence of mutations in the fosfomycin transport systems and drug target and genes encoding fosfomycin-modifying enzymes.
+
 Therefore, the main aim of this project was to study fosfomycin resistance mechanisms in *K. pneumoniae* and in particular, the impact of the presence of *fos* genes to fosfomycin resistance levels in the bacteria.  
 
 ## Data analysis
