@@ -1,4 +1,4 @@
-# Fosfomycin Resistance in K. pneumoniae 
+# Fosfomycin Resistance in *K. pneumoniae* 
 ## Project summary
 *K. pneumoniae* is a Gram-negative bacterium that causes opportunistic and community-acquired infections. *K. pneumoniae* easily develops resistance to multiple antibiotics as it can acquire numerous antibiotic resistance genes (ARGs) from the environment and from other bacteria. As a result, there exists multidrug resistant (MDR) and extremely resistant (XDR) strains which are highly resistant to almost all the antibiotics currently in use.
 
@@ -9,7 +9,7 @@ Mechanisms of fosfomycin resistance have been well-studied in bacteria such as *
 Therefore, the main aim of this project was to study fosfomycin resistance mechanisms in *K. pneumoniae* and in particular, the impact of the presence of *fos* genes to fosfomycin resistance levels in the bacteria.  
 
 ## Data analysis
-The data used for this project was made up of *K. pneumoniae* assembled genomes that were matched with antibiogram data. *fos* genes used were curated from the following public databases: CARD, ResFinder, Kleborate, and GenBank. 
+The data used for this project was made up of *K. pneumoniae* assembled genomes that were matched with antibiogram data. *fos* genes used (data/final_seq_data/fos_genes_final_clean.fasta) were curated from the following public databases: CARD, ResFinder, Kleborate, and GenBank. 
 
 Some of the tools used for analysis include:
 * R for data visualisation and phylogenetic tree annotation
@@ -25,4 +25,7 @@ Some of the tools used for analysis include:
   + FastTree (v2.1.11) for phylogenetic analysis - maximum likelihood phylogenetic trees
 * Python for FASTA file quality control and analysis. Python scripts, written by members of the Holt lab, were used to automate some of the analysis on the Massive M3  high performance computing system (HPC).
 
-## R and Python Scripts used in this project
+## R and Python scripts written for this project
+### R scripts
+* summ_antibiogram.R was used to create bar plot summaries of the datasets being used for analysis
+* fos_blast_uiquehits.R was used to create bar and violin plots visualising the distribution of genomes with *fos* genes across measurements of the different susceptibility testing methods i.e. MIC (broth dilution) and disk diffusion. In addition, it also gives an output of UpSet plots showing the number of genomes with specific *fos* genes and *fos* gene combinations for genomes with more than one *fos* gene
