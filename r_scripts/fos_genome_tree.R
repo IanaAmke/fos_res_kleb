@@ -5,44 +5,43 @@ library(ggtreeExtra)
 library(ggnewscale)
 library(treeio)
 #library(wesanderson)
-library(colorspace)
 
 # read newick file containing tree data
-tree <- read.newick("phylogenetic_trees/fos_gene_with_dups.nwk")
+tree <- read.newick("phylogenetic_trees/filtered_fosgenes_NR_ID_midpoint.nwk")
 
 # prepare tree metadata
-fos_fcyn_uniquehits <- read.delim("data/fos_fcyn_uniquehits.tsv", header = TRUE, sep = "\t")
+fos_fcyn_uniquehits <- read.delim("data/fosgenes_antibiogram_uniqueHits.tsv", header = TRUE, sep = "\t")
 
-blast <- read.delim("data/fos_genes_dups.tsv", header = TRUE, sep = "\t")
+#blast <- read.delim("data/fos_genes_dups.tsv", header = TRUE, sep = "\t")
 
-blast100 <- blast %>%
-  filter(Percent.ID == 100) %>%
-  rename(gene = Subject.seq.ID)%>%
-  separate(Query.seq.ID, into = "Query.seq.ID", sep = "[_]", extra = "drop")
+#blast100 <- blast %>%
+  #filter(Percent.ID == 100) %>%
+  #rename(gene = Subject.seq.ID)%>%
+  #separate(Query.seq.ID, into = "Query.seq.ID", sep = "[_]", extra = "drop")
 
 fos_fcyn_uniquehits <- fos_fcyn_uniquehits %>%
-  mutate(gene = paste(strain, contig, fos.gene, sep = "_"))
+  mutate(gene = paste(strain, contig, fos.gene, sep = "_")) %>%
+  rename(gene.copy.number = contig.number)
 
-fosgene_fosfomycin <- full_join(fos_fcyn_uniquehits, blast100, by = c("Sample.Name" = "Query.seq.ID"), 
-                                keep = FALSE) %>%
-  select(Sample.Name:gene.y) %>%
-  mutate(gene.y = ifelse(gene.y %in% NA, gene.x, gene.y)) %>%
-  select(- gene.x) %>%
-  rename(gene = gene.y) %>%
-  relocate(gene, .after = index) %>%
-  group_by(Sample.Name) %>%
-  mutate(gene.copy.number = n()) %>%
-  relocate(gene.copy.number, .after = gene) %>%
-  mutate(strain = paste(strain, contig, fos.gene, sep = "_")) %>%
-  group_by(Sample.Name)
+#fosgene_fosfomycin <- left_join(fos_fcyn_uniquehits, blast100, by = c("Sample.Name" = "Query.seq.ID")) %>%
+  #select(Sample.Name:gene.y) %>%
+  #mutate(gene.y = ifelse(gene.y %in% NA, gene.x, gene.y)) %>%
+  #select(- gene.x) %>%
+  #rename(gene = gene.y) %>%
+  #relocate(gene, .after = index) %>%
+  #group_by(Sample.Name) %>%
+  #mutate(gene.copy.number = n()) %>%
+  #relocate(gene.copy.number, .after = gene) %>%
+  #mutate(strain = paste(strain, contig, fos.gene, sep = "_")) %>%
+  #group_by(Sample.Name)
 
-filtered_fosgene_fosfomycin <- fosgene_fosfomycin %>%
-  select(strain, Laboratory.Typing.Method, Measurement, Measurement.units, gene, gene.copy.number)
+filtered_fos_fcyn_uniquehits <- fos_fcyn_uniquehits %>%
+  select(strain, Laboratory.Typing.Method, Measurement, Measurement.units, gene, fos.gene, contig, percent.ID, gene.copy.number)
 
-#write_delim(filtered_fosgene_fosfomycin, file = "fosgenes_copynum_pheno.tsv", delim = "\t")
+#write_delim(filtered_fos_fcyn_uniquehits, file = "fosgenes_copynum_pheno.tsv", delim = "\t")
 
 # read tree metadata
-fos_metadata <- read.delim("data/fosgenes_copynum_pheno.tsv", header = TRUE, sep = "\t")
+fos_metadata <- filtered_fos_fcyn_uniquehits
 
 # data for genes 
 dat1 <- fos_metadata %>%
@@ -50,7 +49,7 @@ dat1 <- fos_metadata %>%
 
 # data for gene copy number
 dat2 <- fos_metadata %>%
-  select(strain, gene.copy.number) %>%
+  select(gene, gene.copy.number) %>%
   mutate(total.gene.number = paste(gene.copy.number))
 
 dat2$total.gene.number <- as.factor(dat2$total.gene.number)
@@ -59,7 +58,7 @@ dat2$total.gene.number <- as.factor(dat2$total.gene.number)
 # mic broth dilution
 dat3 <- fos_metadata %>%
   filter(Laboratory.Typing.Method == "MIC (broth dilution)") %>%
-  select(strain, Measurement) %>%
+  select(gene, Measurement) %>%
   mutate(MIC.measurements = paste(Measurement))
 
 dat3$MIC.measurements <- as.factor(dat3$MIC.measurements)
@@ -67,7 +66,7 @@ dat3$MIC.measurements <- as.factor(dat3$MIC.measurements)
 # disk diffusion
 dat4 <- fos_metadata %>%
   filter(Laboratory.Typing.Method == "Disk diffusion") %>%
-  select(strain, Measurement) %>%
+  select(gene, Measurement) %>%
   mutate(D.df.measurements = paste(Measurement))
 
 dat4$D.df.measurements <- as.factor(dat4$D.df.measurements)
@@ -87,9 +86,9 @@ dat4$D.df.measurements <- factor(dat4$D.df.measurements,
 # highlight nodes with instrisic fosA5 gene
 kleborate_genes <- as.tibble(tree) %>%
   left_join(
-    fos_metadata %>% select(strain, gene), by = c("label" = "strain")
+    fos_metadata %>% select(gene, fos.gene), by = c("label" = "gene")
   ) %>%
-  filter(grepl('[*]$', gene))
+  filter(grepl('[*]$', fos.gene))
 
 # plot tree and highlight strains with intrinsic fosA5
 p0 <- ggtree(tree) %<+% dat2 +
@@ -113,10 +112,11 @@ p1 <- p0 +
              axis.params=list(axis="x", text.size = 0, title = "Gene copy number", title.height = 0.01,
                               line.alpha = 0), pwidth = 0.1
              ) + 
-  scale_fill_continuous(low = "#e4e5f7", high = "#0a12f5", name = "Gene copy\nnumber") +
+  scale_fill_continuous(low = "#ffffff", high = "#0a12f5", name = "Gene copy\nnumber", breaks = c(0,1,2),
+                        limits = c(0,2)) +
   new_scale_fill() +
   geom_fruit(data=dat3, geom=geom_tile,
-             mapping=aes(y=strain, x=MIC.measurements, fill=Measurement),
+             mapping=aes(y=gene, x=MIC.measurements, fill=Measurement),
              color = "white", offset = 0.03, size = 0.02 ,
              axis.params=list(axis="x", text.angle = 90, text.size = 1.5, 
                               title = "MIC broth dilution", title.height = 0.01,
@@ -125,18 +125,18 @@ p1 <- p0 +
   scale_fill_continuous(low = "#e4f7e9", high = "#03fc45", name = "MIC broth dilution\nmeasurements") +
   new_scale_fill() +
   geom_fruit(data=dat4, geom=geom_tile,
-             mapping=aes(y=strain, x=D.df.measurements, fill=Measurement),
+             mapping=aes(y=gene, x=D.df.measurements, fill=Measurement),
              color = "white", offset = 0.02, size = 0.02 ,
              axis.params=list(axis="x", text.angle = 90, text.size = 1.5, 
                               title = "Disk diffusion", title.height = 0.01,
                               hjust = 0.05), pwidth = 0.4
   ) +
-  scale_fill_continuous(low = "#fff5f5", high = "#fa0505", name = "Disk diffusion\nmeasurements") +
+  scale_fill_continuous(low = "#faebeb", high = "#f50a0a", name = "Disk diffusion\nmeasurements") +
   geom_treescale(fontsize=2, linesize=0.3, x=0, y=1000) +
   theme(legend.background=element_rect(fill=NA),
         legend.title=element_text(size=6.5),
         legend.text=element_text(size=4.5),
-        legend.spacing.y = unit(0.02, "cm")
+        legend.spacing.y = unit(0.03, "cm")
   ) +
   coord_cartesian(clip = "off")
 
