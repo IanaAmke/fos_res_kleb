@@ -11,18 +11,9 @@ tree <- read.newick("phylogenetic_trees/filtered_fosgenes_NR_ID_midpoint.nwk")
 # prepare tree metadata
 fos_fcyn_uniquehits <- read.delim("data/fosgenes_antibiogram_uniqueHits.tsv", header = TRUE, sep = "\t")
 
-
-
-
-
-
-
-
 fos_fcyn_uniquehits <- fos_fcyn_uniquehits %>%
   mutate(gene = paste(strain, contig, fos.gene, sep = "_")) %>%
   rename(gene.copy.number = contig.number)
-
-
 
 filtered_fos_fcyn_uniquehits <- fos_fcyn_uniquehits %>%
   select(strain, Laboratory.Typing.Method, Measurement, Measurement.units, gene, fos.gene, contig, percent.ID, gene.copy.number)
@@ -85,8 +76,6 @@ p0 <- ggtree(tree) %<+% dat1 +
 p0
 
 # add tree metadata
-
-
 p1 <- p0 + 
   geom_fruit(geom=geom_tile,
              mapping=aes(fill=gene.copy.number),
