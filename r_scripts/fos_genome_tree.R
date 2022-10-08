@@ -11,28 +11,18 @@ tree <- read.newick("phylogenetic_trees/filtered_fosgenes_NR_ID_midpoint.nwk")
 # prepare tree metadata
 fos_fcyn_uniquehits <- read.delim("data/fosgenes_antibiogram_uniqueHits.tsv", header = TRUE, sep = "\t")
 
-#blast <- read.delim("data/fos_genes_dups.tsv", header = TRUE, sep = "\t")
 
-#blast100 <- blast %>%
-  #filter(Percent.ID == 100) %>%
-  #rename(gene = Subject.seq.ID)%>%
-  #separate(Query.seq.ID, into = "Query.seq.ID", sep = "[_]", extra = "drop")
+
+
+
+
+
 
 fos_fcyn_uniquehits <- fos_fcyn_uniquehits %>%
   mutate(gene = paste(strain, contig, fos.gene, sep = "_")) %>%
   rename(gene.copy.number = contig.number)
 
-#fosgene_fosfomycin <- left_join(fos_fcyn_uniquehits, blast100, by = c("Sample.Name" = "Query.seq.ID")) %>%
-  #select(Sample.Name:gene.y) %>%
-  #mutate(gene.y = ifelse(gene.y %in% NA, gene.x, gene.y)) %>%
-  #select(- gene.x) %>%
-  #rename(gene = gene.y) %>%
-  #relocate(gene, .after = index) %>%
-  #group_by(Sample.Name) %>%
-  #mutate(gene.copy.number = n()) %>%
-  #relocate(gene.copy.number, .after = gene) %>%
-  #mutate(strain = paste(strain, contig, fos.gene, sep = "_")) %>%
-  #group_by(Sample.Name)
+
 
 filtered_fos_fcyn_uniquehits <- fos_fcyn_uniquehits %>%
   select(strain, Laboratory.Typing.Method, Measurement, Measurement.units, gene, fos.gene, contig, percent.ID, gene.copy.number)
@@ -95,10 +85,7 @@ p0 <- ggtree(tree) %<+% dat1 +
 p0
 
 # add tree metadata
-# colour palettes
-#colour_palette <- wes_palette("Moonrise3", type = "continuous")
-#colour_palette_2 <- wes_palette("BottleRocket2", type = "continuous")
-#colour_palette_3 <- wes_palette("Zissou1", 100, type = "continuous")
+
 
 p1 <- p0 + 
   geom_fruit(geom=geom_tile,
