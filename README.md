@@ -29,3 +29,5 @@ Some of the tools used for analysis include:
 ### R scripts
 * summ_antibiogram.R was used to create bar plot summaries of the datasets being used for analysis
 * fos_blast_uiquehits.R was used to create bar and violin plots visualising the distribution of genomes with *fos* genes across measurements of the different susceptibility testing methods i.e. MIC (broth dilution) and disk diffusion. In addition, it also gives an output of UpSet plots showing the number of genomes with specific *fos* genes and *fos* gene combinations for genomes with more than one *fos* gene
+* fos_gene_tree.R and fos_genome_tree.R were used to create a gene and genome level tree respectively with heatmaps showing gene copy number and different AST measurements 
+* fos_genome_tree_circular.R was used to create a circular genome tree with a heatmap showing gene copy number
