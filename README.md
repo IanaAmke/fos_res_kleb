@@ -32,3 +32,8 @@ Some of the tools used for analysis include:
 * fos_gene_tree.R and fos_genome_tree.R were used to create a gene and genome level tree respectively with heatmaps showing gene copy number and different AST measurements 
 * fos_genome_tree_circular.R was used to create a circular genome tree with a heatmap showing gene copy number
 * mutate_res_phenotype_func.R was a function created to automatically fill the phenotype of a sample based on EUCAST/CLSI AST breakpoints 
+
+### Python scripts
+* fasta_header_edit_AA.py and fasta_header_edit_gene.py were used to edit the FASTA file header to only include the gene name and ID
+* filter_fosgenes.py was used to check whether all *fos* genes had been extracted from the blast hits (the most common *fos* gene was used as a query sequence used to extract *fos* gene seqeunces from the sample genomes) 
+* start_methionine_AA.py was used to check whether Fos amino acid sequences started with a methionine
