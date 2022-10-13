@@ -17,7 +17,7 @@ Some of the tools used for analysis include:
   + ggupset (v0.3.0) to create UpSet plots
   + ggtree (v3.4.2) for phylogenetic tree annotation
   + ggtreeExtra (v1.6.0) to create heatmaps representing tree metadata
-* Command-line tools for data cleaning ad phylogenetic analysis
+* Command-line tools for data cleaning and phylogenetic analysis
   + CD-HIT (v4.8.1) to delete duplicate sequences
   + SeqKit (v2.2.0) to delete duplicates and remove gaps from FASTA files
   + BLAST (v2.2.30) to query *K. pneumoniae* sample genomes against *fos* genes
