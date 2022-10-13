@@ -9,7 +9,7 @@ Mechanisms of fosfomycin resistance have been well-studied in bacteria such as *
 Therefore, the main aim of this project was to study fosfomycin resistance mechanisms in *K. pneumoniae* and in particular, the impact of the presence of *fos* genes to fosfomycin resistance levels in the bacteria.  
 
 ## Data analysis
-The data used for this project was made up of *K. pneumoniae* assembled genomes that were matched with antibiogram data. *fos* genes used (data/final_seq_data/fos_genes_final_clean.fasta) were curated from the following public databases: CARD, ResFinder, Kleborate, and GenBank, and were queried against the sample genomes to find which *K. pneumoniae* genomes contained *fos* gene sequences. *fos* genes obtained from the different databases are contained in the folder data/seq_data/. 
+The data used for this project was made up of *K. pneumoniae* assembled genomes that were matched with antibiogram data. *fos* genes used (data/final_seq_data/fos_genes_final_clean.fasta) were curated from the following public databases: CARD, ResFinder, Kleborate, and GenBank, and were queried against the sample genomes to find which *K. pneumoniae* genomes contained *fos* gene sequences. *fos* genes obtained from the different databases are contained in the folder seq_data (data/seq_data/). 
 
 Some of the tools used for analysis include:
 * R for data visualisation and phylogenetic tree annotation
